@@ -12,9 +12,21 @@ public class GameManager : MonoBehaviour
     public GameObject livesUI;
     public GameObject timerUI;
 
+    public Sprite timer25;
+    public Sprite timer50;
+    public Sprite timer75;
+    public Sprite timer100;
+
+
     private int score;
     private int lives;
-    private int time;
+    private float time;
+
+    private int TIMER_DURATION = 32;
+
+    private int numTimeblocks;
+    private float timeSegments;
+    private int numActiveblocks;
 
 
     private void Awake()
@@ -25,8 +37,43 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
-
         NewGame();
+
+        numTimeblocks = timerUI.transform.childCount;
+        timeSegments = (float)TIMER_DURATION / (float)numTimeblocks;
+        numActiveblocks = numTimeblocks;
+    }
+
+    private void Update()
+    {
+        if (time <= (numActiveblocks * timeSegments) && numActiveblocks > 0)
+        {
+            GameObject timeBlock = timerUI.transform.GetChild(numActiveblocks - 1).gameObject;
+            float chunk = (numActiveblocks * timeSegments) - time;
+
+            if (chunk <= 1 * (timeSegments / 4))
+            {
+                
+            }
+            else if (chunk <= 2 * (timeSegments / 4))
+            {
+                timeBlock.GetComponent<SpriteRenderer>().sprite = timer75;
+            }
+            else if (chunk <= 3 * (timeSegments / 4))
+            {
+                timeBlock.GetComponent<SpriteRenderer>().sprite = timer50;
+            }
+            else if (chunk <= 4 * (timeSegments / 4))
+            {
+                timeBlock.GetComponent<SpriteRenderer>().sprite = timer25;
+            }
+            else
+            {
+                timeBlock.SetActive(false);
+                numActiveblocks--;
+            }
+
+        }
     }
 
     private void NewGame()
@@ -53,31 +100,24 @@ public class GameManager : MonoBehaviour
         foreach (Transform child in timerUI.transform)
         {
             child.gameObject.SetActive(true);
+            child.gameObject.GetComponent<SpriteRenderer>().sprite = timer100;
         }
 
         StopAllCoroutines();
-        StartCoroutine(Timer(32));
+        StartCoroutine(Timer(TIMER_DURATION));
     }
 
     private IEnumerator Timer(int duration)
     {
+        float interval = 0.01f;
         time = duration;
-
-        int numTimeblocks = timerUI.transform.childCount;
-        float timeSegments = duration / numTimeblocks;
-        int numActiveblocks = numTimeblocks;
+        numActiveblocks = numTimeblocks;
 
         while (time > 0)
         {
-            yield return new WaitForSeconds(1);
+            yield return new WaitForSeconds(interval);
 
-            time--;
-
-            if (time <= (numActiveblocks - 1) * timeSegments)
-            {
-                timerUI.transform.GetChild(numActiveblocks - 1).gameObject.SetActive(false);
-                numActiveblocks--;
-            }
+            time -= interval;
         }
         player.KillFrogger();
     }
@@ -127,7 +167,7 @@ public class GameManager : MonoBehaviour
     {
         player.gameObject.SetActive(false);
 
-        int bonusPoints = time * 20;
+        int bonusPoints = (int)(time * 20);
         AddScore(50 + bonusPoints);
 
         if (Cleared())
