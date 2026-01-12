@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections;
+using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
 {
@@ -7,10 +8,14 @@ public class GameManager : MonoBehaviour
     private Frog player;
 
     public GameObject gameOverMenu;
+    public Text scoreUI;
+    public GameObject livesUI;
+    public GameObject timerUI;
 
     private int score;
     private int lives;
     private int time;
+
 
     private void Awake()
     {
@@ -20,6 +25,7 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
+
         NewGame();
     }
 
@@ -44,19 +50,34 @@ public class GameManager : MonoBehaviour
     {
         player.Respawn();
 
+        foreach (Transform child in timerUI.transform)
+        {
+            child.gameObject.SetActive(true);
+        }
+
         StopAllCoroutines();
-        StartCoroutine(Timer(30));
+        StartCoroutine(Timer(32));
     }
 
     private IEnumerator Timer(int duration)
     {
         time = duration;
 
+        int numTimeblocks = timerUI.transform.childCount;
+        float timeSegments = duration / numTimeblocks;
+        int numActiveblocks = numTimeblocks;
+
         while (time > 0)
         {
             yield return new WaitForSeconds(1);
 
             time--;
+
+            if (time <= (numActiveblocks - 1) * timeSegments)
+            {
+                timerUI.transform.GetChild(numActiveblocks - 1).gameObject.SetActive(false);
+                numActiveblocks--;
+            }
         }
         player.KillFrogger();
     }
@@ -65,7 +86,7 @@ public class GameManager : MonoBehaviour
         SetLives(lives - 1);
         if (lives > 0)
         {
-            Invoke(nameof(Respawn), 1f);
+            Invoke(nameof(Respawn), 2f);
         }
         else
         {
@@ -107,15 +128,16 @@ public class GameManager : MonoBehaviour
         player.gameObject.SetActive(false);
 
         int bonusPoints = time * 20;
-        AddScore(50+ bonusPoints);
+        AddScore(50 + bonusPoints);
 
         if (Cleared())
         {
-            AddScore(1000); 
-            Invoke(nameof(NewLevel),1f);
+            AddScore(1000);
+            Invoke(nameof(NewLevel), 1f);
         }
-        else {
-            Invoke(nameof(Respawn),1f);
+        else
+        {
+            Invoke(nameof(Respawn), 1f);
         }
     }
 
@@ -133,16 +155,29 @@ public class GameManager : MonoBehaviour
 
     private void AddScore(int score)
     {
-        this.score += score;
+        SetScore(this.score + score);
     }
 
     private void SetScore(int score)
     {
         this.score = score;
+        scoreUI.text = "" + this.score;
     }
 
     private void SetLives(int lives)
     {
         this.lives = lives;
+
+        if (this.lives >= 3)
+        {
+            foreach (Transform child in livesUI.transform)
+            {
+                child.gameObject.SetActive(true);
+            }
+        }
+        else
+        {
+            livesUI.transform.GetChild(lives).gameObject.SetActive(false);
+        }
     }
 }
